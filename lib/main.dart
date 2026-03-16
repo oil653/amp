@@ -1,3 +1,4 @@
+import 'package:amp/screens/nav_rail.dart';
 import 'package:amp/screens/tabs/home.dart';
 import 'package:amp/screens/tabs/library.dart';
 import 'package:amp/screens/tabs/stats.dart';
@@ -54,13 +55,12 @@ class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
 
   // TABS
   final PageController _pageController = PageController();
-  int _currentTab = 0;
+  int _currentTabIndex = 0;
 
   final _tabCount = _tabWidget.length;
 
   void _setTab(int index) {
-    if (index > _tabCount || index < 0) {return;}
-    setState(() => _currentTab = index);
+    if (index >= _tabCount || index < 0) {return;}
     _pageController.animateToPage(
       index, 
       duration: const Duration(milliseconds: 300), 
@@ -68,12 +68,17 @@ class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
     );
   }
 
-  /// What is shown for each tab in the naviagtion bar or rail
-  static const List<NavigationDestination> _tabNavs = <NavigationDestination> [
+  static const List<NavigationDestination> _tabDestinations = <NavigationDestination> [
     NavigationDestination(icon: Icon(Icons.home), label: "Home"),
     NavigationDestination(icon: Icon(Icons.self_improvement), label: "Zen"),
     NavigationDestination(icon: Icon(Icons.library_music), label: "Library"),
     NavigationDestination(icon: Icon(Icons.stacked_line_chart), label: "Stonks")
+  ];
+  static const List<NavigationRailDestination> _tabRailDestinations = <NavigationRailDestination> [
+    NavigationRailDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: Text("Home")),
+    NavigationRailDestination(icon: Icon(Icons.self_improvement), label: Text("Zen")),
+    NavigationRailDestination(icon: Icon(Icons.library_music), label: Text("Library")),
+    NavigationRailDestination(icon: Icon(Icons.stacked_line_chart), label: Text("Stonks"))
   ];
 
   /// The widgets of each tab
@@ -96,20 +101,40 @@ class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
 
         home: Scaffold(
           bottomNavigationBar: screenSize == ScreenSize.small ? NavigationBar(
-            destinations: _tabNavs,
+            destinations: _tabDestinations,
             onDestinationSelected: _setTab,
-            selectedIndex: _currentTab,
+            selectedIndex: _currentTabIndex,
           ) : null,
 
-          body: SafeArea(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: _setTab,
-              children: _tabWidget
-            ),
-          )
+          body: _buildBody(screenSize)
         )
       );
     }
+  );
+
+  Widget _buildBody(ScreenSize screenSize) => SafeArea(
+    child: Row(
+      children: [
+        // Left navbar, only available on not small screens
+        if (screenSize != ScreenSize.small) Navrail(
+          selectedIndex: _currentTabIndex,
+          destinations: _tabRailDestinations,
+          onDestinationSelected: (idx) => _setTab(idx),
+
+          labelType: screenSize == ScreenSize.medium ? NavigationRailLabelType.selected : null,
+          extended: screenSize == ScreenSize.large ? true : false,
+          minExtendedWidth: 150,
+        ),
+
+        // Main content
+        Expanded(
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (idx) => setState(() => _currentTabIndex = idx),
+            children: _tabWidget
+          )
+        )
+      ],
+    )
   );
 }
