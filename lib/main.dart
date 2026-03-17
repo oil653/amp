@@ -1,8 +1,8 @@
-import 'package:amp/screens/nav_rail.dart';
 import 'package:amp/screens/tabs/home.dart';
 import 'package:amp/screens/tabs/library.dart';
 import 'package:amp/screens/tabs/stats.dart';
 import 'package:amp/screens/tabs/zen.dart';
+import 'package:m3e_collection/m3e_collection.dart';
 import 'package:rinf/rinf.dart';
 import 'src/bindings/bindings.dart';
 import 'package:flutter/material.dart';
@@ -74,11 +74,11 @@ class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
     NavigationDestination(icon: Icon(Icons.library_music), label: "Library"),
     NavigationDestination(icon: Icon(Icons.stacked_line_chart), label: "Stonks")
   ];
-  static const List<NavigationRailDestination> _tabRailDestinations = <NavigationRailDestination> [
-    NavigationRailDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: Text("Home")),
-    NavigationRailDestination(icon: Icon(Icons.self_improvement), label: Text("Zen")),
-    NavigationRailDestination(icon: Icon(Icons.library_music), label: Text("Library")),
-    NavigationRailDestination(icon: Icon(Icons.stacked_line_chart), label: Text("Stonks"))
+  static const List<NavigationRailM3EDestination> _tabRailDestinations = <NavigationRailM3EDestination> [
+    NavigationRailM3EDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: "Home"),
+    NavigationRailM3EDestination(icon: Icon(Icons.self_improvement_outlined), selectedIcon: Icon(Icons.self_improvement), label: "Zen"),
+    NavigationRailM3EDestination(icon: Icon(Icons.library_music_outlined), selectedIcon: Icon(Icons.library_music), label: "Library"),
+    NavigationRailM3EDestination(icon: Icon(Icons.stacked_line_chart_rounded), label: "Stonks")
   ];
 
   /// The widgets of each tab
@@ -116,14 +116,32 @@ class _MainAppState extends State<MainApp> with SingleTickerProviderStateMixin {
     child: Row(
       children: [
         // Left navbar, only available on not small screens
-        if (screenSize != ScreenSize.small) Navrail(
+        if (screenSize != ScreenSize.small) NavigationRailM3E(
+          type: (screenSize == ScreenSize.large) 
+            ? NavigationRailM3EType.alwaysExpand
+            : NavigationRailM3EType.alwaysCollapse,
+          modality: NavigationRailM3EModality.standard,
+          
+
           selectedIndex: _currentTabIndex,
-          destinations: _tabRailDestinations,
+          sections: <NavigationRailM3ESection>[
+            NavigationRailM3ESection(
+              destinations: _tabRailDestinations
+            )
+          ],
           onDestinationSelected: (idx) => _setTab(idx),
 
-          labelType: screenSize == ScreenSize.medium ? NavigationRailLabelType.selected : null,
-          extended: screenSize == ScreenSize.large ? true : false,
-          minExtendedWidth: 150,
+
+
+          // labelType: screenSize == ScreenSize.medium ? NavigationRailLabelType.selected : null,
+          // extended: screenSize == ScreenSize.large ? true : false,
+          // minExtendedWidth: 220,
+        ),
+        if (screenSize != ScreenSize.small) SizedBox(
+          width: 2,
+          child: Container(
+            color: Colors.grey.shade300,
+          ),
         ),
 
         // Main content
