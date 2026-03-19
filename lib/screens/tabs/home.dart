@@ -9,6 +9,20 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  late TextEditingController _editingController;
+
+  @override
+  void initState() {
+    super.initState();
+    _editingController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _editingController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(context) => Column(
     children: [
@@ -21,6 +35,13 @@ class _HomeState extends State<Home> {
         stream: PlaybackResponse.rustSignalStream,
         builder: (context, snapshot) =>
             Text("Playback status is: ${snapshot.data?.message.playback}"),
+      ),
+      TextField(
+        controller: _editingController,
+        onSubmitted: (input) => OpenMedia(
+          filePath: input,
+          actionType: OpenMediaAction.addToQueue,
+        ).sendSignalToRust(),
       ),
     ],
   );

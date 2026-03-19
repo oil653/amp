@@ -16,7 +16,7 @@ pub async fn create_actors() {
     let mm_address = mm_context.address();
 
     let player = Player::new(mm_address.clone());
-    let mm = MediaManager::new(player_address);
+    let mm = MediaManager::new(mm_address, player_address);
 
     spawn(mm_context.run(mm));
     spawn(player_context.run(player));
