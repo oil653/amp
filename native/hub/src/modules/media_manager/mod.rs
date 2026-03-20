@@ -9,7 +9,7 @@ use tokio::task::JoinSet;
 pub mod signals;
 use crate::modules::{
     media_manager::signals::{OpenMedia, OpenMediaAction, Playback, Queue, Track},
-    player::Player,
+    player::PlayerManager,
 };
 
 /// A queue manages the music playing, and up to be played.
@@ -22,7 +22,7 @@ pub struct MediaManager {
 impl Actor for MediaManager {}
 
 impl MediaManager {
-    pub fn new(self_address: Address<Self>, _player_address: Address<Player>) -> Self {
+    pub fn new(self_address: Address<Self>, _player_address: Address<PlayerManager>) -> Self {
         let mut owned_tasks = JoinSet::new();
         owned_tasks.spawn(Self::listen_for_open_media(self_address.clone()));
         // TODO for later: restore session

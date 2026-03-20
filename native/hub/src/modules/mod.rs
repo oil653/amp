@@ -1,7 +1,7 @@
 use messages::prelude::Context;
 use tokio::spawn;
 
-use crate::modules::{media_manager::MediaManager, player::Player};
+use crate::modules::{media_manager::MediaManager, player::PlayerManager};
 
 mod media_manager;
 mod player;
@@ -15,7 +15,7 @@ pub async fn create_actors() {
     let mm_context = Context::new();
     let mm_address = mm_context.address();
 
-    let player = Player::new(mm_address.clone());
+    let player = PlayerManager::new(player_address.clone(), mm_address.clone());
     let mm = MediaManager::new(mm_address, player_address);
 
     spawn(mm_context.run(mm));
