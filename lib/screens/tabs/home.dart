@@ -40,7 +40,7 @@ class _HomeState extends State<Home> {
         controller: _editingController,
         onSubmitted: (input) => OpenMedia(
           filePath: input,
-          actionType: OpenMediaAction.addToQueue,
+          actionType: OpenMediaAction.replaceQueue,
         ).sendSignalToRust(),
       ),
     ],

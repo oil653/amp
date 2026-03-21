@@ -1,11 +1,32 @@
-use messages::{actor::Actor, prelude::Address};
+use std::{error, time::Duration};
+
+use async_trait::async_trait;
+use messages::{
+    actor::Actor,
+    prelude::{Address, Context, Handler, Notifiable},
+};
 use rinf::{DartSignal, debug_print};
 use rodio::{
-    DeviceSinkBuilder, DeviceSinkError, MixerDeviceSink, Player as RP, speakers::available_outputs,
+    DeviceSinkBuilder, DeviceSinkError, MixerDeviceSink, Player as RP, Source, source::SineWave,
 };
+use thiserror::Error;
 use tokio::task::JoinSet;
 
-use crate::modules::media_manager::{MediaManager, signals::Playback};
+pub mod types;
+
+use crate::modules::{
+    media_manager::{MediaManager, signals::Playback},
+    player::types::Load,
+};
+
+#[derive(Debug, Error)]
+#[allow(unused)]
+pub enum PlayerManagerError {
+    #[error("Failed to load media from path: {0}")]
+    LoadError(String),
+    #[error("No current player to load media to.")]
+    NoPlayer,
+}
 
 pub struct PlayerManager {
     _owned_tasks: JoinSet<()>,
@@ -39,12 +60,51 @@ impl PlayerManager {
         }
     }
 
+    fn can_play(&self) -> bool {
+        self.player
+            .as_ref()
+            .map_or(false, |player| player.player.len() > 0)
+    }
+
     fn clear_player(self_address: Address<Self>) {
         debug_print!("@@@ clear_player called");
     }
 }
 
-/// A player object that implemetns a way to tell the manager that it's dropped.
+#[async_trait]
+impl Handler<Load> for PlayerManager {
+    type Result = Result<(), PlayerManagerError>;
+
+    async fn handle(&mut self, input: Load, _: &Context<Self>) -> Self::Result {
+        // debug_print!("@@@ PlayerManager: loading file");
+        let player = self.player.as_ref().ok_or(PlayerManagerError::NoPlayer)?;
+        player.player.clear();
+        // TODO: Load the audio file
+        let source = SineWave::new(440.0).take_duration(Duration::from_secs(10));
+        player.player.append(source);
+        // debug_print!("@@@ PlayerManager: loaded file");
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl Notifiable<Playback> for PlayerManager {
+    async fn notify(&mut self, input: Playback, _: &Context<Self>) {
+        let player = match &self.player {
+            Some(p) => p,
+            None => return,
+        };
+        use Playback::*;
+        match input {
+            Stopped => player.player.clear(),
+            Paused => player.player.pause(),
+            Playing => player.player.play(),
+        }
+    }
+}
+// TODO: Add handle to when the sink is dropped.
+
+/// A player object that implemetns a way to tell the manager that it's dropped and run a Fn when it happens.
 struct Player {
     sink: MixerDeviceSink, // Inner type
     pub player: RP,

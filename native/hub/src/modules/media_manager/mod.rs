@@ -9,7 +9,7 @@ use tokio::task::JoinSet;
 pub mod signals;
 use crate::modules::{
     media_manager::signals::{OpenMedia, OpenMediaAction, Playback, Queue, Track},
-    player::PlayerManager,
+    player::{PlayerManager, types::Load},
 };
 
 /// A queue manages the music playing, and up to be played.
@@ -18,11 +18,12 @@ pub struct MediaManager {
 
     queue: Queue,
     playback: Playback,
+    player_manager_address: Address<PlayerManager>,
 }
 impl Actor for MediaManager {}
 
 impl MediaManager {
-    pub fn new(self_address: Address<Self>, _player_address: Address<PlayerManager>) -> Self {
+    pub fn new(self_address: Address<Self>, player_address: Address<PlayerManager>) -> Self {
         let mut owned_tasks = JoinSet::new();
         owned_tasks.spawn(Self::listen_for_open_media(self_address.clone()));
         // TODO for later: restore session
@@ -37,6 +38,7 @@ impl MediaManager {
             _owned_tasks: owned_tasks,
             queue,
             playback: Playback::Stopped,
+            player_manager_address: player_address,
         }
     }
 
@@ -51,15 +53,17 @@ impl MediaManager {
 #[async_trait]
 impl Notifiable<Playback> for MediaManager {
     async fn notify(&mut self, input: Playback, _: &Context<Self>) {
-        // debug_print!("@@@ Mediamanager: playback state changed to: {:?}", input);
+        debug_print!("@@@ Mediamanager: playback state changed to: {:?}", input);
         input.send_to_dart();
-        self.playback = input;
+        self.playback = input.clone();
+        let _ = self.player_manager_address.notify(input).await;
     }
 }
 
 #[async_trait]
 impl Notifiable<OpenMedia> for MediaManager {
     async fn notify(&mut self, media: OpenMedia, _: &Context<Self>) {
+        debug_print!("@@@ Mediamanager: loading file: {}", media.file_path);
         match media.action_type {
             OpenMediaAction::AddToQueue => self
                 .queue
@@ -67,12 +71,17 @@ impl Notifiable<OpenMedia> for MediaManager {
                 .push(Track::new_from_path(media.file_path)),
             OpenMediaAction::ReplaceQueue => {
                 self.queue.clear();
-                // TODO: Clear player
-                self.queue.playing = Some(Track::new_from_path(media.file_path))
-                // TODO: Tell player to load this
+                self.queue.playing = Some(Track::new_from_path(media.file_path.clone()));
+                let _ = self
+                    .player_manager_address
+                    .send(Load {
+                        path: media.file_path,
+                    })
+                    .await;
             }
         }
         self.queue.send_signal_to_dart();
         // debug_print!("@@@ Queue is now: {:#?}", self.queue)
+        debug_print!("@@@ Mediamanager:: Loaded file!");
     }
 }
