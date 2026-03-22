@@ -72,16 +72,16 @@ impl Notifiable<OpenMedia> for MediaManager {
             OpenMediaAction::ReplaceQueue => {
                 self.queue.clear();
                 self.queue.playing = Some(Track::new_from_path(media.file_path.clone()));
-                let _ = self
+                let result = self
                     .player_manager_address
                     .send(Load {
                         path: media.file_path,
                     })
                     .await;
+                debug_print!("@@@ MediaManager: media loading result: {:#?}", result)
             }
         }
         self.queue.send_signal_to_dart();
         // debug_print!("@@@ Queue is now: {:#?}", self.queue)
-        debug_print!("@@@ Mediamanager:: Loaded file!");
     }
 }

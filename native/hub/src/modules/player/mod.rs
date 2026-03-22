@@ -1,4 +1,9 @@
-use std::{error, time::Duration};
+use std::{
+    error,
+    fs::File,
+    io::{self, BufReader},
+    time::Duration,
+};
 
 use async_trait::async_trait;
 use messages::{
@@ -7,7 +12,8 @@ use messages::{
 };
 use rinf::{DartSignal, debug_print};
 use rodio::{
-    DeviceSinkBuilder, DeviceSinkError, MixerDeviceSink, Player as RP, Source, source::SineWave,
+    Decoder, DeviceSinkBuilder, DeviceSinkError, MixerDeviceSink, Player as RP, Source,
+    source::SineWave,
 };
 use thiserror::Error;
 use tokio::task::JoinSet;
@@ -26,6 +32,10 @@ pub enum PlayerManagerError {
     LoadError(String),
     #[error("No current player to load media to.")]
     NoPlayer,
+    #[error("Failed to open file: {0}")]
+    FileError(#[from] io::Error),
+    #[error("Failed to decode file: {0}")]
+    DecodeError(#[from] rodio::decoder::DecoderError),
 }
 
 pub struct PlayerManager {
@@ -79,9 +89,12 @@ impl Handler<Load> for PlayerManager {
         // debug_print!("@@@ PlayerManager: loading file");
         let player = self.player.as_ref().ok_or(PlayerManagerError::NoPlayer)?;
         player.player.clear();
-        // TODO: Load the audio file
-        let source = SineWave::new(440.0).take_duration(Duration::from_secs(10));
-        player.player.append(source);
+
+        let file = BufReader::new(File::open(input.path)?);
+        let decoded = Decoder::try_from(file)?;
+
+        player.player.append(decoded);
+
         // debug_print!("@@@ PlayerManager: loaded file");
         Ok(())
     }

@@ -10,10 +10,18 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   late TextEditingController _editingController;
+  late Playback _playback;
 
   @override
   void initState() {
     super.initState();
+    _playback =
+        PlaybackResponse.latestRustSignal?.message.playback ?? Playback.stopped;
+    PlaybackResponse.rustSignalStream.listen((signalPack) {
+      setState(() {
+        _playback = signalPack.message.playback;
+      });
+    });
     _editingController = TextEditingController();
   }
 
@@ -28,8 +36,14 @@ class _HomeState extends State<Home> {
     children: [
       const Text("HOME"),
       ElevatedButton(
-        child: const Text("Lick me twin (^> - <^)"),
-        onPressed: () => Playback.playing.sendSignalToRust(),
+        child: Icon(switch (_playback) {
+          Playback.stopped => Icons.rectangle_outlined,
+          Playback.playing => Icons.pause,
+          Playback.paused => Icons.play_arrow,
+        }),
+        onPressed: () => _playback == Playback.playing
+            ? Playback.paused.sendSignalToRust()
+            : Playback.playing.sendSignalToRust(),
       ),
       StreamBuilder(
         stream: PlaybackResponse.rustSignalStream,
