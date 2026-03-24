@@ -1,4 +1,5 @@
 import "package:amp/src/bindings/signals/signals.dart";
+import "package:file_picker/file_picker.dart";
 import "package:flutter/material.dart";
 
 class Home extends StatefulWidget {
@@ -9,8 +10,20 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  late TextEditingController _editingController;
   late Playback _playback;
+
+  void _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.audio,
+      allowMultiple: false,
+    );
+    if (result != null) {
+      OpenMedia(
+        filePath: result.paths[0]!,
+        actionType: OpenMediaAction.replaceQueue,
+      ).sendSignalToRust();
+    }
+  }
 
   @override
   void initState() {
@@ -22,12 +35,10 @@ class _HomeState extends State<Home> {
         _playback = signalPack.message.playback;
       });
     });
-    _editingController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _editingController.dispose();
     super.dispose();
   }
 
@@ -50,13 +61,7 @@ class _HomeState extends State<Home> {
         builder: (context, snapshot) =>
             Text("Playback status is: ${snapshot.data?.message.playback}"),
       ),
-      TextField(
-        controller: _editingController,
-        onSubmitted: (input) => OpenMedia(
-          filePath: input,
-          actionType: OpenMediaAction.replaceQueue,
-        ).sendSignalToRust(),
-      ),
+      ElevatedButton(onPressed: _pickFile, child: const Text("Open a file")),
     ],
   );
 }

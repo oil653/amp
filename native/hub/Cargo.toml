@@ -28,3 +28,8 @@ thiserror = "2.0.18"
 # Uncomment below to target the web.
 # tokio_with_wasm = { version = "0.8.5", features = ["rt", "macros", "time"] }
 # wasm-bindgen = "0.2.100"
+
+# Needed so we dont get a panic on android
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+ndk-context = "0.1"

@@ -423,7 +423,9 @@ name = "hub"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "jni",
  "messages",
+ "ndk-context",
  "rinf",
  "rodio",
  "serde",
